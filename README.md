@@ -27,6 +27,47 @@ This isn't just a standard chatbot. It is a **Multi-Agent System**, meaning it r
 
 For developers and tech enthusiasts, here is how we built this **Agentic RAG System**:
 
+### 🏗️ System Architecture
+This diagram shows how the different parts of the application talk to each other.
+
+```mermaid
+graph LR
+    subgraph Frontend
+        React[React App]
+    end
+    subgraph Backend
+        FastAPI[FastAPI Server]
+        LangGraph[LangGraph Orchestrator]
+        Agents[AI Agents]
+    end
+    subgraph Data
+        SQLite[(SQLite DB)]
+        Chroma[(ChromaDB)]
+    end
+    
+    React <-->|API| FastAPI
+    FastAPI <--> LangGraph
+    LangGraph --> Agents
+    Agents <--> SQLite
+    Agents <--> Chroma
+```
+
+### 🔄 The Agent Workflow
+This shows the "brain" of the system. Notice how the **Router** decides who you talk to based on what you say.
+
+```mermaid
+graph TD
+    User[User] -->|Chat| Receptionist[Receptionist Agent]
+    Receptionist -->|Identify & Check| DB[(Patient DB)]
+    Receptionist -->|General Query| User
+    Receptionist -->|Medical Query| Router{Router}
+    Router -->|Handoff| Clinical[Clinical Agent]
+    Clinical -->|Medical Q| RAG[RAG Tool]
+    RAG -->|Retrieve| VectorDB[(ChromaDB)]
+    Clinical -->|Research Q| Web[Web Search Tool]
+    Clinical -->|Answer| User
+```
+
 ### The Architecture: LangGraph 🧠
 We use **LangGraph** to create a "State Machine" that controls the conversation flow. It's not just one prompt; it's a logic flow:
 1.  **Start** → User talks to **Receptionist Agent**.
