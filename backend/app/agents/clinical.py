@@ -24,12 +24,9 @@ Rules:
 2. ONLY use 'web_search_tool' if the user explicitly asks for "latest research", "new drugs", or "2024 updates".
 3. Base your answer strictly on the tool output.
 4. Include citations if provided by the tool.
-5. ALWAYS end your response with: "This is an AI assistant for educational purposes only. Always consult healthcare professionals for medical advice."
 
 Patient Context: {patient_context}
 """
-
-
 
 def clinical_node(state: AgentState):
     try:

@@ -66,10 +66,7 @@ export const ChatInterface: React.FC = () => {
               <p>Post-Discharge Support</p>
             </div>
           </div>
-          <div className="disclaimer">
-            <Info size={14} />
-            <span>Educational Purpose Only</span>
-          </div>
+
         </div>
       </header>
       

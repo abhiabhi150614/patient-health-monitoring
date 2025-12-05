@@ -22,9 +22,16 @@ def rag_query(question: str, patient_context: str = ""):
     
     results = []
     for doc in docs:
+        source_path = doc.metadata.get("source", "Nephrology Reference")
+        # Clean up source to show only filename if it's a path
+        if os.path.exists(source_path):
+            source_name = os.path.basename(source_path)
+        else:
+            source_name = source_path
+            
         results.append({
             "content": doc.page_content,
-            "source": doc.metadata.get("source", "Nephrology Reference")
+            "source": source_name
         })
     
     return results

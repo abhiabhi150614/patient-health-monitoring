@@ -1,152 +1,132 @@
-# Post Discharge Medical AI Assistant
+# Post Discharge Medical AI Assistant hii
 
-A sophisticated **Agentic RAG (Retrieval-Augmented Generation)** system designed to support patients during their post-discharge recovery. This application bridges the gap between hospital care and home recovery by providing intelligent, context-aware assistance for medical queries, appointment scheduling, and health monitoring.
+## 🏥 What is this?
+Imagine leaving the hospital after a surgery or treatment. You're home, but you have questions. *"Can I eat this?"*, *"Is this pain normal?"*, *"When is my next appointment?"*.
 
----
-
-## � How It Works: The Agentic Architecture
-
-This application is not just a simple chatbot; it is a **Multi-Agent System** built with **LangGraph**. It consists of specialized agents that collaborate to handle user requests intelligently.
-
-### 1. The Workflow
-The system follows a state-based workflow:
-
-1.  **Receptionist Agent (The Gatekeeper)**
-    *   **Role**: Acts as the first point of contact.
-    *   **Responsibilities**: 
-        *   Identifies the patient (asks for name).
-        *   Retrieves patient records from the SQLite database.
-        *   Handles general queries (appointments, well-being checks).
-        *   **Crucial Step**: If the user asks a *medical question* (e.g., "Can I eat bananas?", "My legs are swelling"), the Receptionist detects this and initiates a **Handoff**.
-
-2.  **The Router**
-    *   **Role**: Traffic controller.
-    *   **Logic**: Monitors the `handoff_to_clinical` flag. If set to `True`, it seamlessly transfers the conversation state (including patient history) to the Clinical Agent.
-
-3.  **Clinical Agent (The Specialist)**
-    *   **Role**: Handles medical and health-related queries.
-    *   **Tools**:
-        *   **`rag_tool`**: Queries a local Vector Database (ChromaDB) containing verified medical documents (e.g., Nephrology guidelines). It uses this for questions about diet, symptoms, and standard care.
-        *   **`web_search_tool`**: Used *only* when the user explicitly asks for "latest news", "new research", or "2024 updates".
-    *   **Context**: It has access to the specific patient's medical record (medications, diagnosis) to provide personalized answers (e.g., "Since you are on *Lisinopril*, you should avoid...").
+Usually, you'd have to call the hospital and wait on hold. This project solves that. It is an **Intelligent Medical Assistant** that knows who you are, what medication you take, and your medical history. It answers your questions instantly, accurately, and safely.
 
 ---
 
-## 📂 Data Formats & Sample Data
+## 🤖 Meet Your AI Care Team
+This isn't just a standard chatbot. It is a **Multi-Agent System**, meaning it runs like a real hospital team with specialized employees working together.
 
-### 1. Patient Data Structure
-The system uses a structured SQL database (`patients.db`) to store patient profiles. Here is the format of a patient record:
+### 1. The Receptionist 👩‍💼
+*   **Role**: The friendly front-desk staff.
+*   **Job**: She greets you, checks your ID, and looks up your file in the database. She handles general chat and administrative tasks.
+*   **Smart Handoff**: If you ask a medical question (e.g., *"My leg hurts"*), she knows she isn't a doctor. She politely says, *"Let me connect you to the Clinical Specialist,"* and transfers the conversation.
 
-```json
-{
-  "id": 1,
-  "name": "Abhishek B Shetty",
-  "discharge_date": "2024-02-01",
-  "primary_diagnosis": "Chronic Kidney Disease Stage 2",
-  "medications": ["Metformin 500mg", "Atorvastatin 20mg"],
-  "dietary_restrictions": "Diabetic renal diet, limit sugar",
-  "follow_up": "Endocrinology in 1 month",
-  "warning_signs": "Dizziness, high blood sugar, swelling",
-  "discharge_instructions": "Check blood sugar daily, maintain diet."
-}
-```
-
-### 2. Medical Knowledge Base (RAG Data)
-*   **Source**: `backend/data/nephrology_reference.txt`
-*   **Content**: Contains clinical guidelines for managing Chronic Kidney Disease (CKD), dietary restrictions for different stages, medication side effects, and warning signs.
-*   **Storage**: This text is chunked, embedded using **HuggingFace Embeddings**, and stored in **ChromaDB** for fast semantic retrieval.
+### 2. The Clinical Specialist 👨‍⚕️
+*   **Role**: The medical expert.
+*   **Job**: He answers your health-related questions.
+*   **Superpower (RAG)**: He doesn't just guess. He has access to a trusted "digital library" of medical guidelines (Nephrology Reference). When you ask a question, he looks up the *exact* page in the book to give you a verified answer.
+*   **Personalized Care**: He reads your specific medical file. If you are on a specific medication like *Lisinopril*, he tailors his advice to *you*, not a generic person.
 
 ---
 
-## 🧪 Sample Patients for Testing
+## ⚙️ Under the Hood: The Technology
 
-The database is pre-seeded with specific profiles you can use to test different scenarios.
+For developers and tech enthusiasts, here is how we built this **Agentic RAG System**:
 
-| Name | Condition | Key Scenario to Test |
-| :--- | :--- | :--- |
-| **Abhishek B Shetty** | CKD Stage 2 (Diabetic) | **Dietary Query**: *"Can I eat sweets?"* (Should reference diabetic diet)<br>**Medication**: *"What is Metformin for?"* |
-| **John Smith** | CKD Stage 3 | **Symptom Check**: *"I have swelling in my legs."* (Should trigger warning signs check)<br>**Diet**: *"Is salt okay?"* (Should reference low sodium) |
-| **James Smith** | CKD Stage 4 | **Severe Case**: *"I feel breathless."* (Should advise immediate medical attention) |
+### The Architecture: LangGraph 🧠
+We use **LangGraph** to create a "State Machine" that controls the conversation flow. It's not just one prompt; it's a logic flow:
+1.  **Start** → User talks to **Receptionist Agent**.
+2.  **Router** → Analyzes the intent. Is it medical?
+    *   **No** → Stay with Receptionist.
+    *   **Yes** → Transfer state to **Clinical Agent**.
+3.  **Action** → Clinical Agent calls tools (Search Database, Search Web) to get facts.
 
-*(Note: There are ~30 other random patients seeded with names like "Mary Johnson", "Robert Davis", etc.)*
+### The Brain: Retrieval-Augmented Generation (RAG) 📚
+We use a technique called **RAG** to ensure medical accuracy without hallucinating facts.
+1.  **Knowledge Base**: We have a file `nephrology_reference.txt` containing verified medical guidelines.
+2.  **Vector Store**: We convert this text into mathematical vectors using **HuggingFace Embeddings** and store them in **ChromaDB** (a local vector database).
+3.  **Retrieval**: When you ask a question, the system searches ChromaDB for the most relevant paragraphs and feeds them to the AI (Google Gemini) to construct the answer.
+
+### The Tools 🛠️
+The agents are equipped with specific tools to perform actions:
+*   `patient_db_tool`: Connects to a **SQLite** database to fetch patient records.
+*   `rag_tool`: Performs semantic search on the medical knowledge base.
+*   `web_search_tool`: A simulated tool that mimics fetching the latest research (e.g., "2024 updates") to demonstrate how the agent handles external data.
 
 ---
 
-## 🚀 Getting Started
+## 🧪 Try It Yourself (Sample Data)
+
+The system comes pre-loaded with "dummy" patients so you can test it right away.
+
+### Patient 1: Abhishek B Shetty
+*   **Condition**: Chronic Kidney Disease (Stage 2) with Diabetes.
+*   **Scenario to Test**:
+    *   *User*: "Hi, I'm Abhishek."
+    *   *Bot*: "Welcome back..."
+    *   *User*: "Can I eat a lot of sugar?"
+    *   *Bot*: (Should check his file, see "Diabetes", and advise against it).
+
+### Patient 2: John Smith
+*   **Condition**: Chronic Kidney Disease (Stage 3).
+*   **Scenario to Test**:
+    *   *User*: "Hi, I'm John Smith."
+    *   *User*: "I have swelling in my legs."
+    *   *Bot*: (Should recognize "swelling" as a warning sign for Stage 3 and advise calling a doctor).
+
+---
+
+## 🚀 Installation Guide
 
 ### Prerequisites
-*   Node.js (v18+)
-*   Python (v3.9+)
-*   Google Gemini API Key (for the LLM)
+*   **Node.js** (v18 or higher)
+*   **Python** (v3.9 or higher)
+*   **Google Gemini API Key** (Get one for free from Google AI Studio)
 
-### 1. Backend Setup
-
-1.  **Navigate to backend:**
+### Step 1: Backend Setup (The Brain)
+1.  Navigate to the backend folder:
     ```bash
     cd backend
     ```
-
-2.  **Create Virtual Environment:**
+2.  Create a virtual environment (keeps your computer clean):
     ```bash
     python -m venv venv
-    # Windows
+    # Activate it:
+    # Windows:
     venv\Scripts\activate
-    # Mac/Linux
+    # Mac/Linux:
     source venv/bin/activate
     ```
-
-3.  **Install Dependencies:**
+3.  Install the required Python libraries:
     ```bash
     pip install -r requirements.txt
     ```
-
-4.  **Configure Environment:**
-    Create a `.env` file in `backend/`:
+4.  Set up your API Key:
+    Create a file named `.env` inside the `backend` folder and add this line:
     ```env
-    GOOGLE_API_KEY=your_gemini_api_key_here
+    GOOGLE_API_KEY=your_actual_api_key_here
     ```
-
-5.  **Seed Database & Ingest RAG Data:**
-    This script creates the SQLite DB and ingests the medical text into ChromaDB.
+5.  Prepare the Database:
+    Run these two scripts to create the fake patients and read the medical text:
     ```bash
     python scripts/seed_patients.py
     python app/rag/ingest.py
     ```
-
-6.  **Run Server:**
+6.  Start the Server:
     ```bash
     uvicorn app.main:app --reload
     ```
 
-### 2. Frontend Setup
-
-1.  **Navigate to frontend:**
+### Step 2: Frontend Setup (The Interface)
+1.  Open a new terminal and go to the frontend folder:
     ```bash
     cd frontend
     ```
-
-2.  **Install Dependencies:**
+2.  Install the interface libraries:
     ```bash
     npm install
     ```
-
-3.  **Run Development Server:**
+3.  Start the website:
     ```bash
     npm run dev
     ```
-
-4.  **Open App**: Go to `http://localhost:5173`
+4.  Open your browser and go to: `http://localhost:5173`
 
 ---
 
-## 🛠️ Tech Stack
-
-*   **Orchestration**: LangGraph (Multi-Agent State Machine)
-*   **LLM**: Google Gemini Flash 2.5
-*   **Vector Store**: ChromaDB
-*   **Embeddings**: HuggingFace (`all-MiniLM-L6-v2`)
-*   **Backend**: FastAPI, SQLAlchemy
-*   **Frontend**: React, TypeScript, Vite (Vanilla CSS)
-
 ## 📄 License
-MIT
+This project is open-source under the **MIT License**.
