@@ -1,4 +1,4 @@
-# Post Discharge Medical AI Assistant hii
+# Post Discharge Medical AI Assistant
 
 ## 🏥 What is this?
 Imagine leaving the hospital after a surgery or treatment. You're home, but you have questions. *"Can I eat this?"*, *"Is this pain normal?"*, *"When is my next appointment?"*.
