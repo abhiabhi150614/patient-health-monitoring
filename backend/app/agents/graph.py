@@ -1,11 +1,12 @@
-from typing import TypedDict, List, Optional
+from typing import TypedDict, List, Optional, Annotated
 from langgraph.graph import StateGraph, END, START
+from operator import add
 from .receptionist import receptionist_node
 from .clinical import clinical_node
 
 class AgentState(TypedDict):
     session_id: str
-    messages: List[dict]
+    messages: Annotated[List[dict], add]
     patient_data: Optional[dict]
     current_agent: str
     handoff_to_clinical: bool

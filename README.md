@@ -1,150 +1,152 @@
 # Post Discharge Medical AI Assistant
 
-A sophisticated multi-agent AI system designed to support patients during their post-discharge recovery phase. This application bridges the gap between hospital care and home recovery by providing intelligent, context-aware assistance for medical queries, appointment scheduling, and health monitoring.
+A sophisticated **Agentic RAG (Retrieval-Augmented Generation)** system designed to support patients during their post-discharge recovery. This application bridges the gap between hospital care and home recovery by providing intelligent, context-aware assistance for medical queries, appointment scheduling, and health monitoring.
 
-## 🚀 Features
+---
 
-### 🤖 Multi-Agent Architecture
-The system employs a LangGraph-based architecture with specialized agents:
-- **Receptionist Agent**: The first point of contact. It handles patient identification, retrieves medical records, manages appointment scheduling, and answers general administrative queries.
-- **Clinical Agent**: A specialized medical assistant that handles clinical queries. It has access to the patient's specific medical history, medications, and discharge instructions to provide personalized advice.
-- **Router**: Intelligently routes queries between agents based on context and complexity.
+## � How It Works: The Agentic Architecture
 
-### 🧠 Advanced AI Capabilities
-- **RAG (Retrieval-Augmented Generation)**: Utilizes ChromaDB to store and retrieve relevant medical knowledge (e.g., nephrology references) to ground the AI's responses in verified medical data.
-- **Context Awareness**: Maintains conversation history and patient state across interactions.
-- **Handoff Mechanism**: Seamlessly transfers the conversation from the Receptionist to the Clinical agent when medical advice is detected.
+This application is not just a simple chatbot; it is a **Multi-Agent System** built with **LangGraph**. It consists of specialized agents that collaborate to handle user requests intelligently.
 
-### 🏥 Patient Management
-- **Health Monitoring**: Tracks vital signs and symptoms reported by the patient.
-- **Medication Tracking**: Knows the patient's specific medication schedule and dosage.
-- **Dietary Guidance**: Provides advice based on the patient's specific dietary restrictions (e.g., Renal Diabetic Diet).
+### 1. The Workflow
+The system follows a state-based workflow:
+
+1.  **Receptionist Agent (The Gatekeeper)**
+    *   **Role**: Acts as the first point of contact.
+    *   **Responsibilities**: 
+        *   Identifies the patient (asks for name).
+        *   Retrieves patient records from the SQLite database.
+        *   Handles general queries (appointments, well-being checks).
+        *   **Crucial Step**: If the user asks a *medical question* (e.g., "Can I eat bananas?", "My legs are swelling"), the Receptionist detects this and initiates a **Handoff**.
+
+2.  **The Router**
+    *   **Role**: Traffic controller.
+    *   **Logic**: Monitors the `handoff_to_clinical` flag. If set to `True`, it seamlessly transfers the conversation state (including patient history) to the Clinical Agent.
+
+3.  **Clinical Agent (The Specialist)**
+    *   **Role**: Handles medical and health-related queries.
+    *   **Tools**:
+        *   **`rag_tool`**: Queries a local Vector Database (ChromaDB) containing verified medical documents (e.g., Nephrology guidelines). It uses this for questions about diet, symptoms, and standard care.
+        *   **`web_search_tool`**: Used *only* when the user explicitly asks for "latest news", "new research", or "2024 updates".
+    *   **Context**: It has access to the specific patient's medical record (medications, diagnosis) to provide personalized answers (e.g., "Since you are on *Lisinopril*, you should avoid...").
+
+---
+
+## 📂 Data Formats & Sample Data
+
+### 1. Patient Data Structure
+The system uses a structured SQL database (`patients.db`) to store patient profiles. Here is the format of a patient record:
+
+```json
+{
+  "id": 1,
+  "name": "Abhishek B Shetty",
+  "discharge_date": "2024-02-01",
+  "primary_diagnosis": "Chronic Kidney Disease Stage 2",
+  "medications": ["Metformin 500mg", "Atorvastatin 20mg"],
+  "dietary_restrictions": "Diabetic renal diet, limit sugar",
+  "follow_up": "Endocrinology in 1 month",
+  "warning_signs": "Dizziness, high blood sugar, swelling",
+  "discharge_instructions": "Check blood sugar daily, maintain diet."
+}
+```
+
+### 2. Medical Knowledge Base (RAG Data)
+*   **Source**: `backend/data/nephrology_reference.txt`
+*   **Content**: Contains clinical guidelines for managing Chronic Kidney Disease (CKD), dietary restrictions for different stages, medication side effects, and warning signs.
+*   **Storage**: This text is chunked, embedded using **HuggingFace Embeddings**, and stored in **ChromaDB** for fast semantic retrieval.
+
+---
+
+## 🧪 Sample Patients for Testing
+
+The database is pre-seeded with specific profiles you can use to test different scenarios.
+
+| Name | Condition | Key Scenario to Test |
+| :--- | :--- | :--- |
+| **Abhishek B Shetty** | CKD Stage 2 (Diabetic) | **Dietary Query**: *"Can I eat sweets?"* (Should reference diabetic diet)<br>**Medication**: *"What is Metformin for?"* |
+| **John Smith** | CKD Stage 3 | **Symptom Check**: *"I have swelling in my legs."* (Should trigger warning signs check)<br>**Diet**: *"Is salt okay?"* (Should reference low sodium) |
+| **James Smith** | CKD Stage 4 | **Severe Case**: *"I feel breathless."* (Should advise immediate medical attention) |
+
+*(Note: There are ~30 other random patients seeded with names like "Mary Johnson", "Robert Davis", etc.)*
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+*   Node.js (v18+)
+*   Python (v3.9+)
+*   Google Gemini API Key (for the LLM)
+
+### 1. Backend Setup
+
+1.  **Navigate to backend:**
+    ```bash
+    cd backend
+    ```
+
+2.  **Create Virtual Environment:**
+    ```bash
+    python -m venv venv
+    # Windows
+    venv\Scripts\activate
+    # Mac/Linux
+    source venv/bin/activate
+    ```
+
+3.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Configure Environment:**
+    Create a `.env` file in `backend/`:
+    ```env
+    GOOGLE_API_KEY=your_gemini_api_key_here
+    ```
+
+5.  **Seed Database & Ingest RAG Data:**
+    This script creates the SQLite DB and ingests the medical text into ChromaDB.
+    ```bash
+    python scripts/seed_patients.py
+    python app/rag/ingest.py
+    ```
+
+6.  **Run Server:**
+    ```bash
+    uvicorn app.main:app --reload
+    ```
+
+### 2. Frontend Setup
+
+1.  **Navigate to frontend:**
+    ```bash
+    cd frontend
+    ```
+
+2.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+
+4.  **Open App**: Go to `http://localhost:5173`
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Python, FastAPI, LangGraph, LangChain, SQLAlchemy, ChromaDB
-- **Frontend**: React, TypeScript, Vite, TailwindCSS
-- **Database**: SQLite (for patient records), ChromaDB (for vector embeddings)
-
-## 📂 Project Structure
-
-```
-datasmith/
-├── backend/
-│   ├── app/
-│   │   ├── agents/         # LangGraph agent definitions (Receptionist, Clinical)
-│   │   ├── rag/            # RAG implementation and vector store logic
-│   │   ├── routers/        # FastAPI route handlers
-│   │   ├── models.py       # SQLAlchemy database models
-│   │   └── db.py           # Database connection and session management
-│   ├── data/               # Reference medical data for RAG
-│   ├── scripts/            # Utility scripts (seeding data)
-│   └── test_api.py         # Integration testing script
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   └── ...
-│   └── ...
-└── ...
-```
-
-## 🧪 Sample Data
-
-The system comes pre-loaded with sample patient data for testing and demonstration purposes. You can use these profiles to interact with the bot.
-
-### 1. Abhishek B Shetty
-- **Condition**: Chronic Kidney Disease Stage 2
-- **Discharge Date**: Feb 1, 2024
-- **Medications**: Metformin 500mg, Atorvastatin 20mg
-- **Diet**: Diabetic renal diet, limit sugar
-- **Warning Signs**: Dizziness, high blood sugar, swelling
-- **Example Query**: *"Hi, I'm Abhishek. Can I eat bananas with my condition?"*
-
-### 2. John Smith
-- **Condition**: Chronic Kidney Disease Stage 3
-- **Discharge Date**: Jan 15, 2024
-- **Medications**: Lisinopril 10mg, Furosemide 20mg
-- **Diet**: Low sodium (2g/day), fluid restriction (1.5L/day)
-- **Example Query**: *"My legs are swelling up, what should I do?"*
-
-*(Note: If the database is empty, run the seed script as shown below)*
-
-## ⚡ Getting Started
-
-### Prerequisites
-- Node.js (v18+)
-- Python (v3.9+)
-
-### Backend Setup
-
-1. **Navigate to backend:**
-   ```bash
-   cd backend
-   ```
-
-2. **Create and activate virtual environment:**
-   ```bash
-   python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # Mac/Linux
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Environment Configuration:**
-   Create a `.env` file in the `backend/` directory:
-   ```env
-   OPENAI_API_KEY=your_openai_api_key_here
-   # Add other keys if necessary (e.g., GOOGLE_API_KEY)
-   ```
-
-5. **Seed the Database:**
-   Initialize the database with sample patients:
-   ```bash
-   python scripts/seed_patients.py
-   ```
-
-6. **Run the Server:**
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-### Frontend Setup
-
-1. **Navigate to frontend:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Run Development Server:**
-   ```bash
-   npm run dev
-   ```
-
-## ✅ Verification
-
-To verify that the backend is working correctly and the agents are performing as expected, you can run the included test script:
-
-1. Ensure the backend server is running (`uvicorn app.main:app --reload`).
-2. In a new terminal (inside `backend/`):
-   ```bash
-   python test_api.py
-   ```
-   This script will:
-   - Simulate a chat session.
-   - Verify patient lookup for "Abhishek B Shetty".
-   - Test the handoff mechanism from Receptionist to Clinical agent.
+*   **Orchestration**: LangGraph (Multi-Agent State Machine)
+*   **LLM**: Google Gemini Flash 2.5
+*   **Vector Store**: ChromaDB
+*   **Embeddings**: HuggingFace (`all-MiniLM-L6-v2`)
+*   **Backend**: FastAPI, SQLAlchemy
+*   **Frontend**: React, TypeScript, Vite (Vanilla CSS)
 
 ## 📄 License
-
 MIT

@@ -50,30 +50,20 @@ def _clinical_node_impl(state: AgentState):
         patient_context=json.dumps(patient_data) if patient_data else "Unknown"
     ))]
     
-    for m in messages:
+    # Filter out the last message if it is an assistant message (likely the handoff message)
+    # so that the conversation ends with a user message, satisfying Gemini's requirement.
+    conversation_messages = messages.copy()
+    if conversation_messages and conversation_messages[-1]['role'] == 'assistant':
+        conversation_messages.pop()
+
+    for m in conversation_messages:
         if m['role'] == 'user':
             lc_messages.append(HumanMessage(content=m['content']))
         else:
             lc_messages.append(AIMessage(content=m['content']))
 
-    # Ensure the last message is from the user (Gemini requirement for single-turn, but we are sending history)
-    # Actually, Gemini just needs alternating roles or correct structure.
-    # The error "single turn requests end with a user role" implies we might be sending a history where the last message isn't user?
-    # But we append the user message right before calling graph.
-    # However, if we have a tool output, we need to be careful.
-    
-    # Let's inspect messages.
-    # If the last message in 'messages' is NOT user, we might have an issue.
-    # But we iterate 'messages' from state.
-    
     # Filter out empty messages just in case
     lc_messages = [m for m in lc_messages if m.content and str(m.content).strip()]
-    
-    # If the very last message is NOT HumanMessage, we might have a problem if the model expects a user prompt to continue.
-    # But usually chat models are fine with history.
-    # The specific error "single turn requests end with a user role" suggests it thinks this is a single turn or the structure is wrong.
-    
-    # Let's make sure we don't send system message as the ONLY message if possible (though we have user msg).
     
     llm_with_tools = llm.bind_tools([rag_tool, web_search_tool])
     
@@ -82,8 +72,9 @@ def _clinical_node_impl(state: AgentState):
     except Exception as e:
         print(f"LLM Invoke Error: {e}")
         # Fallback: try sending just the last user message if history is causing issues
-        if messages:
-            last_user_msg = [m for m in messages if m['role'] == 'user'][-1]
+        user_msgs = [m for m in messages if m['role'] == 'user']
+        if user_msgs:
+            last_user_msg = user_msgs[-1]
             fallback_msgs = [
                 SystemMessage(content=CLINICAL_SYSTEM_PROMPT.format(
                     patient_context=json.dumps(patient_data) if patient_data else "Unknown"
